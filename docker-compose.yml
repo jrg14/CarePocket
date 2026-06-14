@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: carepocket-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-carepocket}
+      POSTGRES_USER: ${POSTGRES_USER:-carepocket}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-carepocket}
+    ports:
+      - "5432:5432"
+    volumes:
+      - carepocket_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-carepocket} -d ${POSTGRES_DB:-carepocket}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: carepocket-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-carepocket}:${POSTGRES_PASSWORD:-carepocket}@db:5432/${POSTGRES_DB:-carepocket}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+volumes:
+  carepocket_postgres_data:

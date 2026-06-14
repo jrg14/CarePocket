@@ -1,0 +1,89 @@
+[project]
+name = "CarePocket"
+version = "0.1.0"
+description = "CarePocket"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi[standard]==0.136.3",
+  "uvicorn==0.34.3",
+  "pydantic==2.13.4",
+  "pydantic-settings==2.8.1",
+  "sqlalchemy==2.0.50",
+  "asyncpg==0.31.0",
+  "alembic==1.18.4"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.0.2",
+    "pytest-cov==7.0.0",
+    "ruff==0.14.14",
+    "pre-commit==4.5.1",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "backend"}
+
+[tool.setuptools.packages.find]
+where = ["backend"]
+include = ["app*"]
+
+# -----------------------------
+# RUFF CONFIG (lint + format)
+# -----------------------------
+[tool.ruff]
+# Máxima longitud de línea (igual que Black)
+line-length = 88
+
+# Incluir subcarpetas del proyecto
+src = ["src", "app"]
+
+# Ignorar ciertos directorios comunes
+exclude = [
+  ".git",
+  "__pycache__",
+  ".venv",
+  "build",
+  "dist"
+]
+
+# -----------------------------
+# Reglas de linting
+# -----------------------------
+[tool.ruff.lint]
+select = ["E", "F", "UP", "B", "SIM", "I", "C4", "A"]
+ignore = ["F401"]  # puedes ajustar esto
+
+# Explicación rápida:
+# E/F  → Errores de estilo y sintaxis (Pyflakes)
+# UP   → Modernización de código (pyupgrade)
+# B    → Buenas prácticas (bugbear)
+# SIM  → Simplificaciones
+# I    → Ordenar imports
+# C4   → Buenas prácticas de comprehensions
+# A    → Evita variables sombra
+
+# -----------------------------
+# Reglas de formato
+# -----------------------------
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+docstring-code-format = true
+docstring-code-line-length = 72
+
+# -----------------------------
+# Orden de imports
+# -----------------------------
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+combine-as-imports = true
+lines-between-types = 1
+order-by-type = true

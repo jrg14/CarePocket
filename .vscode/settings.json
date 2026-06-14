@@ -1,0 +1,46 @@
+{
+  //Editor
+  "editor.formatOnSave": true,
+  "editor.formatOnType": true,
+  "editor.formatOnPaste": true,
+  "editor.rulers": [
+    88
+  ],
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": "always",
+      "source.organizeImports.ruff": "always"
+    }
+  },
+  "files.trimTrailingWhitespace": true,
+  //Python
+  "python.defaultInterpreterPath": "${workspaceFolder}/env/bin/python",
+  "python.terminal.activateEnvironment": true,
+  //Pylance
+  "python.languageServer": "Pylance",
+  "python.autoComplete.extraPaths": [
+    "${workspaceFolder}/env/lib/python3.14/site-packages",
+    "${workspaceFolder}/venv/lib/python3.14/site-packages",
+    "app"
+  ],
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/env/lib/python3.14/site-packages",
+    "${workspaceFolder}/venv/lib/python3.14/site-packages",
+    "app"
+  ],
+  "python.analysis.indexing": true,
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportUndefinedVariable": "none",
+    "reportUnusedExpression": "none"
+  },
+  "python.analysis.typeCheckingMode": "strict",
+  "python.analysis.inlayHints.variableTypes": false,
+  "python.analysis.inlayHints.functionReturnTypes": true,
+  "python.analysis.inlayHints.callArgumentNames": "off",
+  "python.analysis.inlayHints.pytestParameters": true,
+  //Testing
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
+}

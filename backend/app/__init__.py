@@ -1,0 +1,1 @@
+"""CarePocket backend application package."""
