@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from pydantic import Field, field_validator, model_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,8 +14,13 @@ class Settings(BaseSettings):
 
     app_name: str = "CarePocket API"
     app_env: str = "development"
-    debug: bool = True
+    debug: bool = Field(
+        default=True,
+        validation_alias=AliasChoices("APP_DEBUG", "DEBUG"),
+    )
     api_v1_prefix: str = "/api/v1"
+    auth_secret: str = "change-me-in-production"
+    auth_token_lifetime_seconds: int = 3600
     cors_origins: list[str] = Field(
         default_factory=lambda: ["http://localhost:3000"],
     )
@@ -35,6 +40,35 @@ class Settings(BaseSettings):
         if not value:
             return ["http://localhost:3000"]
         return [origin.strip() for origin in value.split(",") if origin.strip()]
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def _parse_debug(cls, value: object) -> object:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized_value = value.strip().lower()
+            if normalized_value in {
+                "1",
+                "true",
+                "yes",
+                "on",
+                "debug",
+                "development",
+                "dev",
+            }:
+                return True
+            if normalized_value in {
+                "0",
+                "false",
+                "no",
+                "off",
+                "release",
+                "production",
+                "prod",
+            }:
+                return False
+        return value
 
     @model_validator(mode="after")
     def _build_database_url(self) -> "Settings":

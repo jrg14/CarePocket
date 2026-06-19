@@ -1,4 +1,4 @@
-import app.models  # noqa: F401
+import app.modules.users.models  # noqa: F401
 
 from app.db.base import Base
 from app.db.session import engine
