@@ -22,7 +22,10 @@ class Settings(BaseSettings):
     auth_secret: str = "change-me-in-production"
     auth_token_lifetime_seconds: int = 3600
     cors_origins: list[str] = Field(
-        default_factory=lambda: ["http://localhost:3000"],
+        default_factory=lambda: [
+            "http://localhost:3000",
+            "http://localhost:5173",
+        ],
     )
 
     database_url: str | None = None
@@ -38,7 +41,10 @@ class Settings(BaseSettings):
         if isinstance(value, list):
             return value
         if not value:
-            return ["http://localhost:3000"]
+            return [
+                "http://localhost:3000",
+                "http://localhost:5173",
+            ]
         return [origin.strip() for origin in value.split(",") if origin.strip()]
 
     @field_validator("debug", mode="before")
