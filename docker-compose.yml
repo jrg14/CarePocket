@@ -35,5 +35,22 @@ services:
       - "8000:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: carepocket-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@carepocket.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "True"
+    ports:
+      - "5050:80"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - carepocket_pgadmin_data:/var/lib/pgadmin
+
 volumes:
   carepocket_postgres_data:
+  carepocket_pgadmin_data:
