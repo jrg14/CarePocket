@@ -11,12 +11,48 @@ from sqlalchemy.orm import selectinload
 from app.modules.incomes.models import Income, IncomeCategory
 
 DEFAULT_INCOME_CATEGORIES: list[dict[str, object]] = [
-    {"name": "Salario", "slug": "salario", "icon": "💼", "color": "#0f766e", "sort_order": 1},
-    {"name": "Freelance", "slug": "freelance", "icon": "🧑‍💻", "color": "#2563eb", "sort_order": 2},
-    {"name": "Negocio", "slug": "negocio", "icon": "🏢", "color": "#8b5cf6", "sort_order": 3},
-    {"name": "Becas", "slug": "becas", "icon": "🎓", "color": "#0ea5e9", "sort_order": 4},
-    {"name": "Reembolsos", "slug": "reembolsos", "icon": "↩", "color": "#10b981", "sort_order": 5},
-    {"name": "Otros", "slug": "otros", "icon": "💡", "color": "#64748b", "sort_order": 6},
+    {
+        "name": "Salario",
+        "slug": "salario",
+        "icon": "💼",
+        "color": "#0f766e",
+        "sort_order": 1,
+    },
+    {
+        "name": "Freelance",
+        "slug": "freelance",
+        "icon": "🧑‍💻",
+        "color": "#2563eb",
+        "sort_order": 2,
+    },
+    {
+        "name": "Negocio",
+        "slug": "negocio",
+        "icon": "🏢",
+        "color": "#8b5cf6",
+        "sort_order": 3,
+    },
+    {
+        "name": "Becas",
+        "slug": "becas",
+        "icon": "🎓",
+        "color": "#0ea5e9",
+        "sort_order": 4,
+    },
+    {
+        "name": "Reembolsos",
+        "slug": "reembolsos",
+        "icon": "↩",
+        "color": "#10b981",
+        "sort_order": 5,
+    },
+    {
+        "name": "Otros",
+        "slug": "otros",
+        "icon": "💡",
+        "color": "#64748b",
+        "sort_order": 6,
+    },
 ]
 
 
@@ -30,7 +66,10 @@ async def ensure_default_categories(session: AsyncSession) -> None:
         return
 
     session.add_all(
-        [IncomeCategory(is_active=True, **payload) for payload in DEFAULT_INCOME_CATEGORIES]
+        [
+            IncomeCategory(is_active=True, **payload)
+            for payload in DEFAULT_INCOME_CATEGORIES
+        ]
     )
     await session.commit()
 
@@ -44,7 +83,9 @@ async def get_categories(session: AsyncSession) -> list[IncomeCategory]:
     return list(result.scalars().all())
 
 
-async def get_category_or_404(session: AsyncSession, category_id: int) -> IncomeCategory:
+async def get_category_or_404(
+    session: AsyncSession, category_id: int
+) -> IncomeCategory:
     result = await session.execute(
         select(IncomeCategory).where(
             IncomeCategory.id == category_id,
@@ -229,7 +270,9 @@ async def get_summary(
                     "color": row.color,
                 },
                 "amount": amount,
-                "percentage": round((amount / month_total * 100) if month_total else 0, 1),
+                "percentage": round(
+                    (amount / month_total * 100) if month_total else 0, 1
+                ),
             }
         )
 
