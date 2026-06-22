@@ -1,10 +1,14 @@
 from fastapi import APIRouter
 
 from app.api.v1.auth.router import router as auth_router
+from app.api.v1.expenses.router import router as expenses_router
 from app.api.v1.health import router as health_router
+from app.api.v1.incomes.router import router as incomes_router
 from app.api.v1.users.router import router as users_router
 
 api_router = APIRouter()
 api_router.include_router(health_router)
 api_router.include_router(auth_router)
 api_router.include_router(users_router)
+api_router.include_router(expenses_router)
+api_router.include_router(incomes_router)

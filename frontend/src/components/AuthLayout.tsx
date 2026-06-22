@@ -16,7 +16,7 @@ export function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
         <ul className="feature-list">
           <li>Autenticación con JWT</li>
           <li>Sesión persistente en el navegador</li>
-          <li>Base preparada para panel y finanzas</li>
+          <li>Panel financiero con ingresos, gastos, categorías y resúmenes</li>
         </ul>
       </section>
       <section className="auth-card">{children}</section>

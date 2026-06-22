@@ -28,7 +28,7 @@ Facilitar la toma de decisiones mediante simulaciones y predicciones.
 Generar recomendaciones personalizadas basadas en datos reales.
 
 ## Frontend
-El proyecto incluye una base React en `frontend/` para autenticación con JWT.
+El proyecto incluye una base React en `frontend/` para autenticación con JWT y un panel financiero diario con gastos e ingresos.
 
 ### Arranque local
 1. Entra en `frontend/`
@@ -49,5 +49,27 @@ El proyecto incluye una base React en `frontend/` para autenticación con JWT.
 - `/login`
 - `/register`
 - `/`
+
+### Panel financiero
+Una vez autenticado, el dashboard permite:
+- Registrar gastos diarios con categoría, importe, fecha, método de pago y nota opcional.
+- Registrar ingresos diarios con categoría, importe, fecha, origen y nota opcional.
+- Ver totales de hoy, semana y mes.
+- Consultar distribución por categorías.
+- Revisar movimientos recientes y eliminar registros de gastos e ingresos.
+
+### API principal
+- `GET /api/v1/expenses/summary`
+- `GET /api/v1/expenses`
+- `POST /api/v1/expenses`
+- `PATCH /api/v1/expenses/{expense_id}`
+- `DELETE /api/v1/expenses/{expense_id}`
+- `GET /api/v1/expenses/categories`
+- `GET /api/v1/incomes/summary`
+- `GET /api/v1/incomes`
+- `POST /api/v1/incomes`
+- `PATCH /api/v1/incomes/{income_id}`
+- `DELETE /api/v1/incomes/{income_id}`
+- `GET /api/v1/incomes/categories`
 
 El backend ya permite por defecto los orígenes `http://localhost:3000` y `http://localhost:5173`.

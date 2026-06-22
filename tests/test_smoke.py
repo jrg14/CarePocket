@@ -23,6 +23,12 @@ def test_application_exposes_basic_routes() -> None:
     assert "/api/v1/auth/jwt/logout" in paths
     assert "/api/v1/users/me" in paths
     assert "/api/v1/auth/register" in paths
+    assert "/api/v1/expenses" in paths
+    assert "/api/v1/expenses/summary" in paths
+    assert "/api/v1/expenses/categories" in paths
+    assert "/api/v1/incomes" in paths
+    assert "/api/v1/incomes/summary" in paths
+    assert "/api/v1/incomes/categories" in paths
     assert "/" in paths
 
     import asyncio
