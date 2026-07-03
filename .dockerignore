@@ -12,5 +12,3 @@ build
 *.egg-info
 .env
 .env.*
-frontend/node_modules
-frontend/dist
