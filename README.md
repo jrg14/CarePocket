@@ -26,28 +26,3 @@ Detectar patrones y tendencias que pasan desapercibidos.
 Ayudar a prevenir problemas financieros antes de que ocurran.
 Facilitar la toma de decisiones mediante simulaciones y predicciones.
 Generar recomendaciones personalizadas basadas en datos reales.
-
-## Frontend
-El proyecto incluye una base React en `frontend/` para autenticación con JWT.
-
-### Arranque local
-1. Entra en `frontend/`
-2. Copia `.env.example` a `.env`
-3. Instala dependencias con `npm install`
-4. Ejecuta `npm run dev`
-
-### Arranque con Docker
-1. Levanta todo con `docker compose up --build`
-2. Abre el frontend en `http://localhost:5173`
-3. Abre el backend en `http://localhost:8000`
-4. Abre `pgAdmin` en `http://localhost:5050`
-
-### Variables
-- `VITE_API_URL=http://localhost:8000/api/v1`
-
-### Rutas incluidas
-- `/login`
-- `/register`
-- `/`
-
-El backend ya permite por defecto los orígenes `http://localhost:3000` y `http://localhost:5173`.

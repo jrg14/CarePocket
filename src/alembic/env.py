@@ -5,9 +5,10 @@ import sys
 
 from pathlib import Path
 
-from alembic import context
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import async_engine_from_config
+
+from alembic import context
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
