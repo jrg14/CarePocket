@@ -13,6 +13,14 @@ class AccountSchema(BaseModel):
     account_name: str = Field(..., description="Name of the account")
 
 
+class AccountCreateSchema(BaseModel):
+    account_name: str = Field(..., min_length=1, max_length=80)
+
+
+class AccountUpdateSchema(BaseModel):
+    account_name: str = Field(..., min_length=1, max_length=80)
+
+
 class TransactionSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

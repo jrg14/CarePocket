@@ -31,6 +31,37 @@ async def get_active_accounts_by_user_id(user_id: int) -> list[AccountModel]:
         return result.scalars().all()
 
 
+async def create_account_for_user(user_id: int, account_name: str) -> AccountModel:
+    async with async_session_maker() as session:
+        account = AccountModel(user_id=user_id, name=account_name)
+        session.add(account)
+        await session.commit()
+        await session.refresh(account)
+        return account
+
+
+async def update_active_account_name(
+    account_id: int, user_id: int, account_name: str
+) -> AccountModel | None:
+    async with async_session_maker() as session:
+        result = await session.execute(
+            select(AccountModel).where(
+                AccountModel.id == account_id,
+                AccountModel.user_id == user_id,
+                AccountModel.is_active,
+            )
+        )
+        account = result.scalar_one_or_none()
+
+        if not account:
+            return None
+
+        account.name = account_name
+        await session.commit()
+        await session.refresh(account)
+        return account
+
+
 async def get_active_transactions_by_account_id(
     account_id: int, user_id: int
 ) -> list[TransactionModel]:
