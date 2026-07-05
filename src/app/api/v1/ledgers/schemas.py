@@ -1,0 +1,37 @@
+from datetime import datetime
+from decimal import Decimal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.modules.ledgers.types import CurrencyType, TransactionType
+
+
+class AccountSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    account_id: int = Field(..., description="Unique identifier for the account")
+    account_name: str = Field(..., description="Name of the account")
+
+
+class TransactionSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    transaction_id: int = Field(
+        ..., description="Unique identifier for the transaction"
+    )
+    amount: Decimal = Field(..., description="Transaction amount")
+    currency: CurrencyType = Field(..., description="Transaction currency")
+    transaction_type: TransactionType = Field(..., description="Transaction type")
+    transaction_date: datetime = Field(..., description="Date of the transaction")
+    description: str = Field(..., description="Transaction description")
+    transaction_category_id: int | None = Field(
+        None, description="Optional transaction category identifier"
+    )
+
+
+class AccountDetailSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    account_id: int = Field(..., description="Unique identifier for the account")
+    account_name: str = Field(..., description="Name of the account")
+    balance: Decimal = Field(..., description="Current balance of the account")

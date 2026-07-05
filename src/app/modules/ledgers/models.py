@@ -5,14 +5,14 @@ from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.modules.ledgers.types import (
+from src.app.modules.ledgers.types import (
     CurrencyType,
     TransactionRecurringType,
     TransactionType,
 )
 
 
-class Account(Base):
+class AccountModel(Base):
     __tablename__ = "account"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -29,12 +29,12 @@ class Account(Base):
     name: Mapped[str] = mapped_column(String(length=80), nullable=False)
     balance: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False, default=0)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
-    transactions: Mapped[list["Transaction"]] = relationship(
-        "Transaction", back_populates="account"
+    transactions: Mapped[list["TransactionModel"]] = relationship(
+        "TransactionModel", back_populates="account"
     )
 
 
-class Transaction(Base):
+class TransactionModel(Base):
     __tablename__ = "transaction"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -63,12 +63,12 @@ class Transaction(Base):
     )
     description: Mapped[str] = mapped_column(String(length=180), nullable=False)
 
-    account: Mapped[list["Account"]] = relationship(
-        "Account", back_populates="transactions"
+    account: Mapped["AccountModel"] = relationship(
+        "AccountModel", back_populates="transactions"
     )
 
 
-class TransactionCategory(Base):
+class TransactionCategoryModel(Base):
     __tablename__ = "transaction_category"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
@@ -81,7 +81,7 @@ class TransactionCategory(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
-class RecurringTransaction(Base):
+class RecurringTransactionModel(Base):
     __tablename__ = "recurring_transaction"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
