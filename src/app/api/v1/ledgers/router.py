@@ -1,12 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from app.api.v1.ledgers.schemas import (
     AccountCreateSchema,
     AccountDetailSchema,
     AccountSchema,
     AccountUpdateSchema,
+    LedgerSummarySchema,
     TransactionCategorySchema,
     TransactionCreateSchema,
     TransactionSchema,
@@ -22,6 +23,7 @@ from app.modules.ledgers.services import (
     get_active_transactions_by_account_id,
     get_transaction_by_id,
     get_transaction_categories,
+    get_user_ledger_summary,
     update_active_account_name,
     update_transaction_for_user,
 )
@@ -29,6 +31,19 @@ from app.modules.users.auth import current_active_user
 from app.modules.users.models import User
 
 router = APIRouter(prefix="/ledgers", tags=["ledgers"])
+
+
+#
+#
+# Summary
+#
+#
+@router.get("/summary", response_model=LedgerSummarySchema)
+async def get_summary(
+    user: Annotated[User, Depends(current_active_user)],
+    period_days: int = Query(30, ge=7, le=365),
+) -> LedgerSummarySchema:
+    return await get_user_ledger_summary(user_id=user.id, period_days=period_days)
 
 
 #
