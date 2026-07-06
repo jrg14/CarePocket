@@ -22,12 +22,12 @@
   "python.autoComplete.extraPaths": [
     "${workspaceFolder}/env/lib/python3.14/site-packages",
     "${workspaceFolder}/venv/lib/python3.14/site-packages",
-    "app"
+    "${workspaceFolder}/src"
   ],
   "python.analysis.extraPaths": [
     "${workspaceFolder}/env/lib/python3.14/site-packages",
     "${workspaceFolder}/venv/lib/python3.14/site-packages",
-    "app"
+    "${workspaceFolder}/src"
   ],
   "python.analysis.indexing": true,
   "python.analysis.autoImportCompletions": true,

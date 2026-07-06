@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from src.app.modules.ledgers.types import CurrencyType, TransactionType
+from app.modules.ledgers.types import CurrencyType, TransactionType
 
 
 class AccountSchema(BaseModel):
@@ -34,6 +34,20 @@ class TransactionSchema(BaseModel):
     description: str = Field(..., description="Transaction description")
     transaction_category_id: int | None = Field(
         None, description="Optional transaction category identifier"
+    )
+
+
+class TransactionCategorySchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    transaction_category_id: int = Field(
+        ..., description="Unique identifier for the transaction category"
+    )
+    transaction_category_name: str = Field(
+        ..., description="Name of the transaction category"
+    )
+    transaction_category_description: str | None = Field(
+        None, description="Optional category description"
     )
 
 

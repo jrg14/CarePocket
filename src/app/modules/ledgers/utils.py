@@ -1,6 +1,6 @@
 from decimal import Decimal
 
-from src.app.modules.ledgers.types import TransactionType
+from app.modules.ledgers.types import TransactionType
 
 
 def transaction_effect(amount: Decimal, transaction_type: TransactionType) -> Decimal:

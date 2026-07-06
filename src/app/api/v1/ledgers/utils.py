@@ -1,5 +1,5 @@
-from src.app.api.v1.ledgers.schemas import TransactionSchema
-from src.app.modules.ledgers.models import TransactionModel
+from app.api.v1.ledgers.schemas import TransactionSchema
+from app.modules.ledgers.models import TransactionModel
 
 
 def to_transaction_schema(transaction: TransactionModel) -> TransactionSchema:

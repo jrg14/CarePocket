@@ -2,17 +2,18 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from src.app.api.v1.ledgers.schemas import (
+from app.api.v1.ledgers.schemas import (
     AccountCreateSchema,
     AccountDetailSchema,
     AccountSchema,
     AccountUpdateSchema,
+    TransactionCategorySchema,
     TransactionCreateSchema,
     TransactionSchema,
     TransactionUpdateSchema,
 )
-from src.app.api.v1.ledgers.utils import to_transaction_schema
-from src.app.modules.ledgers.services import (
+from app.api.v1.ledgers.utils import to_transaction_schema
+from app.modules.ledgers.services import (
     create_account_for_user,
     create_transaction_for_account,
     delete_transaction_for_user,
@@ -20,15 +21,21 @@ from src.app.modules.ledgers.services import (
     get_active_accounts_by_user_id,
     get_active_transactions_by_account_id,
     get_transaction_by_id,
+    get_transaction_categories,
     update_active_account_name,
     update_transaction_for_user,
 )
-from src.app.modules.users.auth import current_active_user
-from src.app.modules.users.models import User
+from app.modules.users.auth import current_active_user
+from app.modules.users.models import User
 
 router = APIRouter(prefix="/ledgers", tags=["ledgers"])
 
 
+#
+#
+# Accounts
+#
+#
 @router.get("/accounts", response_model=list[AccountSchema])
 async def get_accounts(
     user: Annotated[User, Depends(current_active_user)],
@@ -92,12 +99,32 @@ async def update_account(
     return AccountSchema(account_id=account.id, account_name=account.name)
 
 
+#
+#
+# Accounts transactions
+#
+#
+@router.get("/transaction-categories", response_model=list[TransactionCategorySchema])
+async def transaction_categories() -> list[TransactionCategorySchema]:
+    categories = await get_transaction_categories()
+
+    return [
+        TransactionCategorySchema(
+            transaction_category_id=category.id,
+            transaction_category_name=category.name,
+            transaction_category_description=category.description,
+        )
+        for category in categories
+    ]
+
+
 @router.get(
     "/account/{account_id}/transactions", response_model=list[TransactionSchema]
 )
 async def account_transactions(
     user: Annotated[User, Depends(current_active_user)],
     account_id: int,
+    transaction_category_id: int | None = None,
 ) -> list[TransactionSchema]:
     account = await get_active_account_by_id(account_id=account_id)
 
@@ -110,6 +137,7 @@ async def account_transactions(
     transactions = await get_active_transactions_by_account_id(
         account_id=account_id,
         user_id=user.id,
+        transaction_category_id=transaction_category_id,
     )
 
     return [to_transaction_schema(transaction) for transaction in transactions]
@@ -212,3 +240,10 @@ async def delete_transaction(
 
     if not deleted:
         raise HTTPException(status_code=404, detail="Transaction not found")
+
+
+#
+#
+# Accounts categories transactions
+#
+#

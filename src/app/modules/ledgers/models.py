@@ -5,7 +5,7 @@ from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from src.app.modules.ledgers.types import (
+from app.modules.ledgers.types import (
     CurrencyType,
     TransactionRecurringType,
     TransactionType,

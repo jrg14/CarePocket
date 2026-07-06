@@ -4,10 +4,14 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from src.app.db.session import async_session_maker
-from src.app.modules.ledgers.models import AccountModel, TransactionModel
-from src.app.modules.ledgers.types import CurrencyType, TransactionType
-from src.app.modules.ledgers.utils import transaction_effect
+from app.db.session import async_session_maker
+from app.modules.ledgers.models import (
+    AccountModel,
+    TransactionCategoryModel,
+    TransactionModel,
+)
+from app.modules.ledgers.types import CurrencyType, TransactionType
+from app.modules.ledgers.utils import transaction_effect
 
 
 #
@@ -74,10 +78,10 @@ async def update_active_account_name(
 #
 #
 async def get_active_transactions_by_account_id(
-    account_id: int, user_id: int
+    account_id: int, user_id: int, transaction_category_id: int | None = None
 ) -> list[TransactionModel]:
     async with async_session_maker() as session:
-        result = await session.execute(
+        query = (
             select(TransactionModel)
             .join(AccountModel, AccountModel.id == TransactionModel.account_id)
             .where(
@@ -86,6 +90,23 @@ async def get_active_transactions_by_account_id(
                 AccountModel.is_active,
             )
             .order_by(TransactionModel.transaction_date.desc())
+        )
+
+        if transaction_category_id is not None:
+            query = query.where(
+                TransactionModel.transaction_category_id == transaction_category_id
+            )
+
+        result = await session.execute(query)
+        return result.scalars().all()
+
+
+async def get_transaction_categories() -> list[TransactionCategoryModel]:
+    async with async_session_maker() as session:
+        result = await session.execute(
+            select(TransactionCategoryModel).order_by(
+                TransactionCategoryModel.name.asc()
+            )
         )
         return result.scalars().all()
 
