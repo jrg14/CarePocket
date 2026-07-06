@@ -2,22 +2,29 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.v1.ledgers.schemas import (
+from src.app.api.v1.ledgers.schemas import (
     AccountCreateSchema,
     AccountDetailSchema,
     AccountSchema,
     AccountUpdateSchema,
+    TransactionCreateSchema,
     TransactionSchema,
+    TransactionUpdateSchema,
 )
-from app.modules.ledgers.services import (
+from src.app.api.v1.ledgers.utils import to_transaction_schema
+from src.app.modules.ledgers.services import (
     create_account_for_user,
+    create_transaction_for_account,
+    delete_transaction_for_user,
     get_active_account_by_id,
     get_active_accounts_by_user_id,
     get_active_transactions_by_account_id,
+    get_transaction_by_id,
     update_active_account_name,
+    update_transaction_for_user,
 )
-from app.modules.users.auth import current_active_user
-from app.modules.users.models import User
+from src.app.modules.users.auth import current_active_user
+from src.app.modules.users.models import User
 
 router = APIRouter(prefix="/ledgers", tags=["ledgers"])
 
@@ -105,15 +112,103 @@ async def account_transactions(
         user_id=user.id,
     )
 
-    return [
-        TransactionSchema(
-            transaction_id=transaction.id,
-            amount=transaction.amount,
-            currency=transaction.currency,
-            transaction_type=transaction.transaction_type,
-            transaction_date=transaction.transaction_date,
-            description=transaction.description,
-            transaction_category_id=transaction.transaction_category_id,
-        )
-        for transaction in transactions
-    ]
+    return [to_transaction_schema(transaction) for transaction in transactions]
+
+
+@router.post(
+    "/account/{account_id}/transactions",
+    response_model=TransactionSchema,
+    status_code=201,
+)
+async def create_transaction(
+    user: Annotated[User, Depends(current_active_user)],
+    account_id: int,
+    payload: TransactionCreateSchema,
+) -> TransactionSchema:
+    account = await get_active_account_by_id(account_id=account_id)
+
+    if not account:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    if account.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    transaction = await create_transaction_for_account(
+        account_id=account_id,
+        user_id=user.id,
+        amount=payload.amount,
+        currency=payload.currency,
+        transaction_type=payload.transaction_type,
+        transaction_date=payload.transaction_date,
+        description=payload.description,
+        transaction_category_id=payload.transaction_category_id,
+    )
+
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    return to_transaction_schema(transaction)
+
+
+@router.get("/transactions/{transaction_id}", response_model=TransactionSchema)
+async def get_transaction(
+    user: Annotated[User, Depends(current_active_user)],
+    transaction_id: int,
+) -> TransactionSchema:
+    transaction = await get_transaction_by_id(transaction_id=transaction_id)
+
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    if transaction.account.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    return to_transaction_schema(transaction)
+
+
+@router.patch("/transactions/{transaction_id}", response_model=TransactionSchema)
+async def update_transaction(
+    user: Annotated[User, Depends(current_active_user)],
+    transaction_id: int,
+    payload: TransactionUpdateSchema,
+) -> TransactionSchema:
+    transaction = await get_transaction_by_id(transaction_id=transaction_id)
+
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    if transaction.account.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    updated = await update_transaction_for_user(
+        transaction_id=transaction_id,
+        user_id=user.id,
+        **payload.model_dump(exclude_unset=True),
+    )
+
+    if not updated:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    return to_transaction_schema(updated)
+
+
+@router.delete("/transactions/{transaction_id}", status_code=204)
+async def delete_transaction(
+    user: Annotated[User, Depends(current_active_user)],
+    transaction_id: int,
+) -> None:
+    transaction = await get_transaction_by_id(transaction_id=transaction_id)
+
+    if not transaction:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+
+    if transaction.account.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    deleted = await delete_transaction_for_user(
+        transaction_id=transaction_id,
+        user_id=user.id,
+    )
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Transaction not found")

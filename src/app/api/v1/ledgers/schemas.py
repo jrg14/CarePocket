@@ -3,7 +3,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.modules.ledgers.types import CurrencyType, TransactionType
+from src.app.modules.ledgers.types import CurrencyType, TransactionType
 
 
 class AccountSchema(BaseModel):
@@ -32,6 +32,32 @@ class TransactionSchema(BaseModel):
     transaction_type: TransactionType = Field(..., description="Transaction type")
     transaction_date: datetime = Field(..., description="Date of the transaction")
     description: str = Field(..., description="Transaction description")
+    transaction_category_id: int | None = Field(
+        None, description="Optional transaction category identifier"
+    )
+
+
+class TransactionCreateSchema(BaseModel):
+    amount: Decimal = Field(..., gt=0, description="Transaction amount")
+    currency: CurrencyType = Field(..., description="Transaction currency")
+    transaction_type: TransactionType = Field(..., description="Transaction type")
+    transaction_date: datetime = Field(..., description="Date of the transaction")
+    description: str = Field(..., min_length=1, max_length=180)
+    transaction_category_id: int | None = Field(
+        None, description="Optional transaction category identifier"
+    )
+
+
+class TransactionUpdateSchema(BaseModel):
+    amount: Decimal | None = Field(None, gt=0, description="Transaction amount")
+    currency: CurrencyType | None = Field(None, description="Transaction currency")
+    transaction_type: TransactionType | None = Field(
+        None, description="Transaction type"
+    )
+    transaction_date: datetime | None = Field(
+        None, description="Date of the transaction"
+    )
+    description: str | None = Field(None, min_length=1, max_length=180)
     transaction_category_id: int | None = Field(
         None, description="Optional transaction category identifier"
     )
