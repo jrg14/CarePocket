@@ -26,3 +26,22 @@ Detectar patrones y tendencias que pasan desapercibidos.
 Ayudar a prevenir problemas financieros antes de que ocurran.
 Facilitar la toma de decisiones mediante simulaciones y predicciones.
 Generar recomendaciones personalizadas basadas en datos reales.
+
+## Documentación
+
+- [Arquitectura general](docs/architecture.md)
+- [Dominio de negocio](docs/domain.md)
+- [Modelos de datos](docs/data-models.md)
+- [Guía de desarrollo](docs/development.md)
+- [Roadmap](docs/roadmap.md)
+
+## Estado actual
+
+La rama `main` contiene la base del backend:
+
+- FastAPI como framework principal.
+- Autenticación con JWT mediante `fastapi-users`.
+- Persistencia async con SQLAlchemy y PostgreSQL.
+- Migración inicial de usuarios con Alembic.
+
+La parte de cuentas, transacciones, analítica y predicción todavía está por construir.
