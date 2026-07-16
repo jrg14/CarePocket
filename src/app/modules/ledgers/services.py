@@ -1,4 +1,3 @@
-from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -12,20 +11,13 @@ from app.modules.ledgers.models import (
     TransactionModel,
 )
 from app.modules.ledgers.types import CurrencyType, TransactionType
-from app.modules.ledgers.utils import (
-    aggregate_transactions,
-    percent_change,
-    to_decimal,
-    transaction_effect,
-)
+from app.modules.ledgers.utils import to_decimal, transaction_effect
 
 
-#
-#
-# Accounts services
-#
-#
+# Servicios de cuentas: lectura y escritura sobre cuentas activas.
+# Separamos esta lógica para mantener la capa HTTP delgada.
 async def get_active_account_by_id(account_id: int) -> AccountModel | None:
+    # Buscamos solo cuentas activas para no exponer registros inactivos.
     async with async_session_maker() as session:
         result = await session.execute(
             select(AccountModel).where(
@@ -37,6 +29,8 @@ async def get_active_account_by_id(account_id: int) -> AccountModel | None:
 
 
 async def get_active_accounts_by_user_id(user_id: int) -> list[AccountModel]:
+    # Recuperamos solo las cuentas activas del usuario porque son las únicas válidas
+    # para el flujo normal de la aplicación.
     async with async_session_maker() as session:
         result = await session.execute(
             select(AccountModel).where(
@@ -48,6 +42,7 @@ async def get_active_accounts_by_user_id(user_id: int) -> list[AccountModel]:
 
 
 async def create_account_for_user(user_id: int, account_name: str) -> AccountModel:
+    # Creamos y persistimos la cuenta para devolver el estado real guardado.
     async with async_session_maker() as session:
         account = AccountModel(user_id=user_id, name=account_name)
         session.add(account)
@@ -59,6 +54,8 @@ async def create_account_for_user(user_id: int, account_name: str) -> AccountMod
 async def update_active_account_name(
     account_id: int, user_id: int, account_name: str
 ) -> AccountModel | None:
+    # Validamos propiedad y estado antes de editar, así evitamos modificar una cuenta
+    # ajena o desactivada.
     async with async_session_maker() as session:
         result = await session.execute(
             select(AccountModel).where(
@@ -78,14 +75,14 @@ async def update_active_account_name(
         return account
 
 
-#
-#
-# Accounts transactions services
-#
-#
+# Servicios de transacciones:
+# concentran la lectura, creación, actualización y borrado de movimientos
+# manteniendo la consistencia del balance de la cuenta asociada.
 async def get_active_transactions_by_account_id(
     account_id: int, user_id: int, transaction_category_id: int | None = None
 ) -> list[TransactionModel]:
+    # Filtramos por cuenta, usuario y estado para evitar fugas de datos.
+    # El filtro opcional por categoría permite reutilizar el servicio.
     async with async_session_maker() as session:
         query = (
             select(TransactionModel)
@@ -108,6 +105,7 @@ async def get_active_transactions_by_account_id(
 
 
 async def get_transaction_categories() -> list[TransactionCategoryModel]:
+    # Ordenamos alfabéticamente para que la UI muestre un selector estable.
     async with async_session_maker() as session:
         result = await session.execute(
             select(TransactionCategoryModel).order_by(
@@ -118,6 +116,8 @@ async def get_transaction_categories() -> list[TransactionCategoryModel]:
 
 
 async def get_transaction_by_id(transaction_id: int) -> TransactionModel | None:
+    # Cargamos la transacción junto con su cuenta para evitar consultas adicionales
+    # cuando la API necesite mostrar contexto del movimiento.
     async with async_session_maker() as session:
         result = await session.execute(
             select(TransactionModel)
@@ -137,6 +137,8 @@ async def create_transaction_for_account(
     description: str,
     transaction_category_id: int | None,
 ) -> TransactionModel | None:
+    # Antes de crear el movimiento comprobamos que la cuenta pertenezca al usuario
+    # y siga activa; así evitamos escribir sobre una cuenta inválida.
     async with async_session_maker() as session:
         result = await session.execute(
             select(AccountModel).where(
@@ -176,6 +178,9 @@ async def update_transaction_for_user(
     description: str | None = None,
     transaction_category_id: int | None | object = None,
 ) -> TransactionModel | None:
+    # Primero recuperamos la transacción con su cuenta para poder:
+    # 1) validar que pertenece al usuario,
+    # 2) recalcular el balance correctamente si cambian importe o tipo.
     async with async_session_maker() as session:
         result = await session.execute(
             select(TransactionModel)
@@ -193,14 +198,17 @@ async def update_transaction_for_user(
             return None
 
         account = transaction.account
+        # Guardamos el efecto anterior para revertirlo antes de aplicar el nuevo valor.
         previous_amount = Decimal(transaction.amount)
         previous_type = TransactionType(transaction.transaction_type)
         previous_effect = transaction_effect(previous_amount, previous_type)
 
+        # Calculamos el nuevo efecto a partir de los cambios recibidos.
         new_amount = amount if amount is not None else previous_amount
         new_type = transaction_type if transaction_type is not None else previous_type
         new_effect = transaction_effect(new_amount, new_type)
 
+        # Actualizamos solo los campos enviados para respetar el comportamiento parcial.
         transaction.amount = new_amount
         transaction.currency = (
             currency.value if currency is not None else transaction.currency
@@ -220,6 +228,8 @@ async def update_transaction_for_user(
 
 
 async def delete_transaction_for_user(transaction_id: int, user_id: int) -> bool:
+    # Borramos solo si pertenece al usuario y la cuenta sigue activa.
+    # Antes de eliminarla, revertimos su efecto en el balance.
     async with async_session_maker() as session:
         result = await session.execute(
             select(TransactionModel)
@@ -250,23 +260,23 @@ async def delete_transaction_for_user(transaction_id: int, user_id: int) -> bool
 async def get_user_ledger_summary(
     user_id: int, period_days: int = 30
 ) -> dict[str, object]:
+    # Devolvemos un resumen global y otro por cuenta para el periodo seleccionado.
     async with async_session_maker() as session:
-        now = datetime.now(timezone.utc)
-        period_end = now
+        period_end = datetime.now(timezone.utc)
         period_start = period_end - timedelta(days=period_days)
-        previous_period_end = period_start
-        previous_period_start = previous_period_end - timedelta(days=period_days)
 
         accounts_result = await session.execute(
-            select(AccountModel).where(
+            select(AccountModel)
+            .where(
                 AccountModel.user_id == user_id,
                 AccountModel.is_active,
             )
+            .order_by(AccountModel.id.asc())
         )
         accounts = accounts_result.scalars().all()
 
-        current_transactions_result = await session.execute(
-            select(TransactionModel, TransactionCategoryModel.name)
+        transactions_result = await session.execute(
+            select(TransactionModel, TransactionCategoryModel.name, AccountModel.id)
             .join(AccountModel, AccountModel.id == TransactionModel.account_id)
             .outerjoin(
                 TransactionCategoryModel,
@@ -278,176 +288,113 @@ async def get_user_ledger_summary(
                 TransactionModel.transaction_date >= period_start,
                 TransactionModel.transaction_date < period_end,
             )
-            .order_by(TransactionModel.transaction_date.asc())
+            .order_by(AccountModel.id.asc(), TransactionModel.transaction_date.asc())
         )
-        current_transactions = current_transactions_result.all()
+        transactions = transactions_result.all()
 
-        previous_transactions_result = await session.execute(
-            select(TransactionModel, TransactionCategoryModel.name)
-            .join(AccountModel, AccountModel.id == TransactionModel.account_id)
-            .outerjoin(
-                TransactionCategoryModel,
-                TransactionCategoryModel.id == TransactionModel.transaction_category_id,
-            )
-            .where(
-                AccountModel.user_id == user_id,
-                AccountModel.is_active,
-                TransactionModel.transaction_date >= previous_period_start,
-                TransactionModel.transaction_date < previous_period_end,
-            )
+    totals: dict[str, object] = {
+        "balance": sum(
+            (to_decimal(account.balance) for account in accounts), Decimal("0")
+        ),
+        "income": Decimal("0"),
+        "expense": Decimal("0"),
+        "expenses_by_category": {},
+    }
+
+    account_summaries: dict[int, dict[str, object]] = {
+        account.id: {
+            "account_id": account.id,
+            "account_name": account.name,
+            "balance": to_decimal(account.balance),
+            "income": Decimal("0"),
+            "expense": Decimal("0"),
+            "expenses_by_category": {},
+        }
+        for account in accounts
+    }
+
+    for transaction, category_name, account_id in transactions:
+        amount = to_decimal(transaction.amount)
+        transaction_type = TransactionType(transaction.transaction_type)
+        category_id = transaction.transaction_category_id
+        category_label = category_name or "Sin categoría"
+
+        account_summary = account_summaries[account_id]
+
+        if transaction_type == TransactionType.INCOME:
+            totals["income"] = to_decimal(totals["income"]) + amount
+            account_summary["income"] = to_decimal(account_summary["income"]) + amount
+            continue
+
+        totals["expense"] = to_decimal(totals["expense"]) + amount
+        account_summary["expense"] = to_decimal(account_summary["expense"]) + amount
+
+        totals_categories = totals["expenses_by_category"]
+        category_bucket = totals_categories.setdefault(
+            category_id,
+            {
+                "category_id": category_id,
+                "category_name": category_label,
+                "amount": Decimal("0"),
+            },
         )
-        previous_transactions = previous_transactions_result.all()
+        category_bucket["amount"] = to_decimal(category_bucket["amount"]) + amount
 
-    current_data = aggregate_transactions(current_transactions)
-    previous_data = aggregate_transactions(previous_transactions)
+        account_categories = account_summary["expenses_by_category"]
+        account_category_bucket = account_categories.setdefault(
+            category_id,
+            {
+                "category_id": category_id,
+                "category_name": category_label,
+                "amount": Decimal("0"),
+            },
+        )
+        account_category_bucket["amount"] = (
+            to_decimal(account_category_bucket["amount"]) + amount
+        )
 
-    total_balance = sum(
-        (to_decimal(account.balance) for account in accounts), Decimal("0")
-    )
-    net_flow = to_decimal(current_data["income_total"]) - to_decimal(
-        current_data["expense_total"]
-    )
-
-    account_transaction_counts: dict[int, int] = defaultdict(int)
-    for transaction, _ in current_transactions:
-        account_transaction_counts[transaction.account_id] += 1
-
-    top_accounts = sorted(
-        accounts,
-        key=lambda account: (to_decimal(account.balance), account.id),
-        reverse=True,
-    )
-
-    expense_categories = sorted(
+    totals["expenses_by_category"] = sorted(
         (
             {
                 "category_id": item["category_id"],
                 "category_name": item["category_name"],
                 "amount": to_decimal(item["amount"]),
-                "transaction_count": int(item["transaction_count"]),
             }
-            for item in current_data["expenses_by_category"]
-        ),
-        key=lambda item: item["amount"],
-        reverse=True,
-    )
-    income_categories = sorted(
-        (
-            {
-                "category_id": item["category_id"],
-                "category_name": item["category_name"],
-                "amount": to_decimal(item["amount"]),
-                "transaction_count": int(item["transaction_count"]),
-            }
-            for item in current_data["income_by_category"]
+            for item in totals["expenses_by_category"].values()
         ),
         key=lambda item: item["amount"],
         reverse=True,
     )
 
-    overview = {
-        "total_balance": total_balance,
-        "active_accounts_count": len(accounts),
-        "transactions_count": int(current_data["transactions_count"]),
-        "income_total": to_decimal(current_data["income_total"]),
-        "expense_total": to_decimal(current_data["expense_total"]),
-        "net_flow": net_flow,
-        "average_daily_income": to_decimal(current_data["income_total"]) / period_days,
-        "average_daily_expense": to_decimal(current_data["expense_total"])
-        / period_days,
-        "last_transaction_at": current_data["last_transaction_at"],
-    }
-
-    trends = {
-        "income_change_pct": percent_change(
-            to_decimal(current_data["income_total"]),
-            to_decimal(previous_data["income_total"]),
-        ),
-        "expense_change_pct": percent_change(
-            to_decimal(current_data["expense_total"]),
-            to_decimal(previous_data["expense_total"]),
-        ),
-        "projected_balance_next_period": total_balance + net_flow,
-    }
-
-    alerts: list[str] = []
-    recommendations: list[str] = []
-
-    if overview["transactions_count"] == 0:
-        alerts.append("No hay movimientos en el periodo seleccionado.")
-        recommendations.append(
-            "Registra algunas transacciones para empezar a ver patrones."
-        )
-    else:
-        if to_decimal(current_data["expense_total"]) > to_decimal(
-            current_data["income_total"]
-        ):
-            alerts.append("Estás gastando más de lo que ingresas en este periodo.")
-
-        if (
-            to_decimal(previous_data["expense_total"]) > 0
-            and trends["expense_change_pct"] > 10
-        ):
-            alerts.append(
-                "Tus gastos han subido con fuerza respecto al periodo anterior."
-            )
-
-        if expense_categories:
-            top_expense = expense_categories[0]
-            expense_total = to_decimal(current_data["expense_total"])
-            if expense_total > 0:
-                share = (top_expense["amount"] / expense_total) * Decimal("100")
-                if share >= 35:
-                    alerts.append(
-                        f"La categoría {top_expense['category_name']} concentra "
-                        f"{share:.0f}% de tu gasto."
-                    )
-                    recommendations.append(
-                        f"Revisar {top_expense['category_name']} puede darte el mayor "
-                        "ahorro."
-                    )
-
-        if to_decimal(trends["projected_balance_next_period"]) < 0:
-            alerts.append("La proyección del próximo periodo es negativa.")
-            recommendations.append(
-                "Conviene recortar gasto variable o reforzar ingresos."
-            )
-
-        if not recommendations and expense_categories:
-            top_expense = expense_categories[0]
-            recommendations.append(
-                f"El gasto más alto está en {top_expense['category_name']}; controlar "
-                "esa categoría mejoraría tu cierre."
-            )
-
-    if not alerts:
-        alerts.append("Tus cuentas están estables en el periodo seleccionado.")
-    if not recommendations:
-        recommendations.append(
-            "Sigue monitorizando ingresos y gastos para detectar desviaciones a tiempo."
-        )
+    accounts_summary = [
+        {
+            "account_id": account_summary["account_id"],
+            "account_name": account_summary["account_name"],
+            "balance": account_summary["balance"],
+            "income": account_summary["income"],
+            "expense": account_summary["expense"],
+            "expenses_by_category": sorted(
+                (
+                    {
+                        "category_id": item["category_id"],
+                        "category_name": item["category_name"],
+                        "amount": to_decimal(item["amount"]),
+                    }
+                    for item in account_summary["expenses_by_category"].values()
+                ),
+                key=lambda item: item["amount"],
+                reverse=True,
+            ),
+        }
+        for account_summary in account_summaries.values()
+    ]
 
     return {
-        "period": {
-            "period_days": period_days,
-            "period_start": period_start,
-            "period_end": period_end,
-            "previous_period_start": previous_period_start,
-            "previous_period_end": previous_period_end,
+        "totals": {
+            "balance": to_decimal(totals["balance"]),
+            "income": to_decimal(totals["income"]),
+            "expense": to_decimal(totals["expense"]),
+            "expenses_by_category": totals["expenses_by_category"],
         },
-        "overview": overview,
-        "top_accounts": [
-            {
-                "account_id": account.id,
-                "account_name": account.name,
-                "balance": to_decimal(account.balance),
-                "transaction_count": account_transaction_counts.get(account.id, 0),
-            }
-            for account in top_accounts
-        ],
-        "expenses_by_category": expense_categories,
-        "income_by_category": income_categories,
-        "trends": trends,
-        "alerts": alerts,
-        "recommendations": recommendations,
+        "accounts": accounts_summary,
     }
