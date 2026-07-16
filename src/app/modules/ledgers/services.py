@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
+from typing import TypedDict
 
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -12,6 +13,55 @@ from app.modules.ledgers.models import (
 )
 from app.modules.ledgers.types import CurrencyType, TransactionType
 from app.modules.ledgers.utils import to_decimal, transaction_effect
+
+
+class SummaryCategoryBucket(TypedDict):
+    category_id: int | None
+    category_name: str
+    amount: Decimal
+
+
+class SummaryCategorySummary(TypedDict):
+    category_id: int | None
+    category_name: str
+    amount: Decimal
+
+
+class SummaryAccountBucket(TypedDict):
+    account_id: int
+    account_name: str
+    balance: Decimal
+    income: Decimal
+    expense: Decimal
+    expenses_by_category: dict[int | None, SummaryCategoryBucket]
+
+
+class SummaryAccountSummary(TypedDict):
+    account_id: int
+    account_name: str
+    balance: Decimal
+    income: Decimal
+    expense: Decimal
+    expenses_by_category: list[SummaryCategorySummary]
+
+
+class SummaryTotalsBucket(TypedDict):
+    balance: Decimal
+    income: Decimal
+    expense: Decimal
+    expenses_by_category: dict[int | None, SummaryCategoryBucket]
+
+
+class SummaryTotalsSummary(TypedDict):
+    balance: Decimal
+    income: Decimal
+    expense: Decimal
+    expenses_by_category: list[SummaryCategorySummary]
+
+
+class SummaryLedgerResponse(TypedDict):
+    totals: SummaryTotalsSummary
+    accounts: list[SummaryAccountSummary]
 
 
 # Servicios de cuentas: lectura y escritura sobre cuentas activas.
@@ -259,7 +309,7 @@ async def delete_transaction_for_user(transaction_id: int, user_id: int) -> bool
 
 async def get_user_ledger_summary(
     user_id: int, period_days: int = 30
-) -> dict[str, object]:
+) -> SummaryLedgerResponse:
     # Devolvemos un resumen global y otro por cuenta para el periodo seleccionado.
     async with async_session_maker() as session:
         period_end = datetime.now(timezone.utc)
@@ -292,7 +342,7 @@ async def get_user_ledger_summary(
         )
         transactions = transactions_result.all()
 
-    totals: dict[str, object] = {
+    totals: SummaryTotalsBucket = {
         "balance": sum(
             (to_decimal(account.balance) for account in accounts), Decimal("0")
         ),
@@ -301,7 +351,7 @@ async def get_user_ledger_summary(
         "expenses_by_category": {},
     }
 
-    account_summaries: dict[int, dict[str, object]] = {
+    account_summaries: dict[int, SummaryAccountBucket] = {
         account.id: {
             "account_id": account.id,
             "account_name": account.name,
@@ -353,20 +403,20 @@ async def get_user_ledger_summary(
             to_decimal(account_category_bucket["amount"]) + amount
         )
 
-    totals["expenses_by_category"] = sorted(
-        (
+    totals_expenses_by_category: list[SummaryCategorySummary] = sorted(
+        [
             {
                 "category_id": item["category_id"],
                 "category_name": item["category_name"],
                 "amount": to_decimal(item["amount"]),
             }
             for item in totals["expenses_by_category"].values()
-        ),
+        ],
         key=lambda item: item["amount"],
         reverse=True,
     )
 
-    accounts_summary = [
+    accounts_summary: list[SummaryAccountSummary] = [
         {
             "account_id": account_summary["account_id"],
             "account_name": account_summary["account_name"],
@@ -374,14 +424,14 @@ async def get_user_ledger_summary(
             "income": account_summary["income"],
             "expense": account_summary["expense"],
             "expenses_by_category": sorted(
-                (
+                [
                     {
                         "category_id": item["category_id"],
                         "category_name": item["category_name"],
                         "amount": to_decimal(item["amount"]),
                     }
                     for item in account_summary["expenses_by_category"].values()
-                ),
+                ],
                 key=lambda item: item["amount"],
                 reverse=True,
             ),
@@ -394,7 +444,7 @@ async def get_user_ledger_summary(
             "balance": to_decimal(totals["balance"]),
             "income": to_decimal(totals["income"]),
             "expense": to_decimal(totals["expense"]),
-            "expenses_by_category": totals["expenses_by_category"],
+            "expenses_by_category": totals_expenses_by_category,
         },
         "accounts": accounts_summary,
     }
