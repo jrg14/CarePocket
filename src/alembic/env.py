@@ -6,28 +6,27 @@ import sys
 from pathlib import Path
 
 from sqlalchemy import pool
+from sqlalchemy.engine.base import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
+from app.core.settings import get_settings  # noqa: E402
+from app.db.base import Base  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 BACKEND = ROOT / "backend"
 if str(BACKEND) not in sys.path:
     sys.path.insert(0, str(BACKEND))
 
-import app.modules.users.models  # noqa: F401,E402
-
-from app.core.settings import get_settings  # noqa: E402
-from app.db.base import Base  # noqa: E402
 
 config = context.config
 settings = get_settings()
-config.set_main_option("sqlalchemy.url", settings.database_url)
+config.set_main_option("sqlalchemy.url", settings.database_url)  # type: ignore
 
 target_metadata = Base.metadata
 
 
-def do_run_migrations(connection) -> None:
+def do_run_migrations(connection: Connection) -> None:
     context.configure(
         connection=connection,
         target_metadata=target_metadata,
