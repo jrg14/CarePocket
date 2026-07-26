@@ -77,6 +77,27 @@ class TransactionUpdateSchema(BaseModel):
     )
 
 
+class TransferSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    transfer_id: int = Field(..., description="Unique identifier for the transfer")
+    from_account_id: int = Field(..., description="Source account identifier")
+    to_account_id: int = Field(..., description="Destination account identifier")
+    amount: Decimal = Field(..., description="Transfer amount")
+    currency: CurrencyType = Field(..., description="Transfer currency")
+    transfer_date: datetime = Field(..., description="Date of the transfer")
+    description: str = Field(..., description="Transfer description")
+
+
+class TransferCreateSchema(BaseModel):
+    from_account_id: int = Field(..., gt=0, description="Source account identifier")
+    to_account_id: int = Field(..., gt=0, description="Destination account identifier")
+    amount: Decimal = Field(..., gt=0, description="Transfer amount")
+    currency: CurrencyType = Field(..., description="Transfer currency")
+    transfer_date: datetime = Field(..., description="Date of the transfer")
+    description: str = Field(..., min_length=1, max_length=180)
+
+
 class AccountDetailSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

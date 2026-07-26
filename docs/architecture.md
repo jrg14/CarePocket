@@ -44,6 +44,7 @@ En la rama `main` existen:
 - `health` para comprobación de estado.
 - `auth` para login y registro.
 - `users` para consultar el usuario actual.
+- `ledgers` para cuentas, transacciones, transferencias internas y resumen financiero.
 
 ### `app/modules/users`
 
@@ -55,6 +56,17 @@ Incluye:
 - gestor de usuarios para `fastapi-users`.
 - acceso a datos del usuario.
 - utilidades de autenticación.
+
+### `app/modules/ledgers`
+
+Módulo de dominio financiero inicial.
+
+Incluye:
+
+- cuentas del usuario.
+- transacciones de ingreso y gasto.
+- transferencias internas entre cuentas propias.
+- categorías y resumen financiero básico.
 
 ### `app/db`
 
@@ -74,4 +86,3 @@ Incluye:
 - Se usa SQLAlchemy async para separar modelo de persistencia y lógica HTTP.
 - Se usa Alembic para migraciones explícitas y evolutivas.
 - La creación automática de tablas en `init_db()` es útil en desarrollo, pero las migraciones deben ser la referencia real para cambios de esquema.
-

@@ -21,14 +21,14 @@ import sqlalchemy as sa
 
 from alembic import op
 
-revision: str = "0002_create_ledgers_tables_and_seed_categories"
+revision: str = "0002_ledgers"
 down_revision: str | None = "0001_initial_users"
 branch_labels: Sequence[str] | None = None
 depends_on: Sequence[str] | None = None
 
 seed_created_at = datetime(2026, 7, 15, tzinfo=timezone.utc)
 
-categories:list[dict[str, object]] = [
+categories: list[dict[str, object]] = [
     {
         "name": "Supermercado",
         "description": "Gastos en alimentos, limpieza y productos del hogar",

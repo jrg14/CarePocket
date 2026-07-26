@@ -12,21 +12,26 @@ from app.api.v1.ledgers.schemas import (
     TransactionCreateSchema,
     TransactionSchema,
     TransactionUpdateSchema,
+    TransferCreateSchema,
+    TransferSchema,
 )
-from app.api.v1.ledgers.utils import to_transaction_schema
-from app.modules.ledgers.services import (
+from app.api.v1.ledgers.utils import to_transaction_schema, to_transfer_schema
+from app.modules.ledgers.accounts import (
     create_account_for_user,
-    create_transaction_for_account,
-    delete_transaction_for_user,
     get_active_account_by_id,
     get_active_accounts_by_user_id,
+    update_active_account_name,
+)
+from app.modules.ledgers.summary import get_user_ledger_summary
+from app.modules.ledgers.transactions import (
+    create_transaction_for_account,
+    delete_transaction_for_user,
     get_active_transactions_by_account_id,
     get_transaction_by_id,
     get_transaction_categories,
-    get_user_ledger_summary,
-    update_active_account_name,
     update_transaction_for_user,
 )
+from app.modules.ledgers.transfers import create_transfer_for_user
 from app.modules.users.auth import current_active_user
 from app.modules.users.models import User
 
@@ -112,6 +117,38 @@ async def update_account(
         raise HTTPException(status_code=404, detail="Account not found")
 
     return AccountSchema(account_id=account.id, account_name=account.name)
+
+
+#
+#
+# Transfers
+#
+#
+@router.post("/transfers", response_model=TransferSchema, status_code=201)
+async def create_transfer(
+    user: Annotated[User, Depends(current_active_user)],
+    payload: TransferCreateSchema,
+) -> TransferSchema:
+    if payload.from_account_id == payload.to_account_id:
+        raise HTTPException(
+            status_code=400,
+            detail="Source and destination accounts must be different",
+        )
+
+    transfer = await create_transfer_for_user(
+        user_id=user.id,
+        from_account_id=payload.from_account_id,
+        to_account_id=payload.to_account_id,
+        amount=payload.amount,
+        currency=payload.currency,
+        transfer_date=payload.transfer_date,
+        description=payload.description,
+    )
+
+    if not transfer:
+        raise HTTPException(status_code=404, detail="Account not found")
+
+    return to_transfer_schema(transfer)
 
 
 #

@@ -20,6 +20,8 @@ La rama `main` contiene la base del backend:
 - Persistencia con SQLAlchemy async y PostgreSQL.
 - Migraciones con Alembic.
 
-La parte de análisis financiero, cuentas, transacciones, predicciones e IA todavía está en fase de definición de producto.
+El núcleo financiero inicial ya cubre cuentas, transacciones, transferencias
+internas y resumen básico. La analítica avanzada, predicciones e IA siguen en
+fase de definición de producto.
 
 La documentación de cada módulo de negocio se organizará en `docs/features/<modulo>/`.

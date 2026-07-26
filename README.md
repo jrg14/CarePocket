@@ -42,6 +42,7 @@ La rama `main` contiene la base del backend:
 - FastAPI como framework principal.
 - Autenticación con JWT mediante `fastapi-users`.
 - Persistencia async con SQLAlchemy y PostgreSQL.
-- Migración inicial de usuarios con Alembic.
+- Migraciones con Alembic.
+- Núcleo financiero inicial con cuentas, transacciones, transferencias internas y resumen básico.
 
-La parte de cuentas, transacciones, analítica y predicción todavía está por construir.
+La parte de analítica avanzada, predicción e IA todavía está por construir.

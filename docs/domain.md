@@ -11,6 +11,10 @@ En la rama `main` el dominio implementado es el mínimo necesario para arrancar 
 - usuarios.
 - autenticación.
 - acceso al perfil del usuario autenticado.
+- cuentas financieras.
+- transacciones de ingreso y gasto.
+- transferencias internas entre cuentas.
+- resumen financiero básico.
 
 El dominio financiero completo aún no está implementado, pero sí está definido a nivel conceptual en `docs/ideas.md`.
 
@@ -32,12 +36,27 @@ Mecanismo por el que un usuario obtiene un token JWT para acceder a endpoints pr
 
 Datos básicos del usuario visibles desde la API, como nombre, email y estado de cuenta.
 
+### Cuenta financiera
+
+Contenedor de saldo perteneciente a un usuario, como una cuenta corriente o una
+cuenta de ahorro.
+
+### Transacción
+
+Movimiento económico real registrado en una cuenta. Puede ser ingreso o gasto.
+
+### Transferencia interna
+
+Movimiento de dinero entre dos cuentas del mismo usuario. Cambia el saldo de las
+cuentas implicadas, pero no se considera ingreso ni gasto real.
+
 ## Dominio futuro previsto
 
 Los conceptos que guían la evolución del producto son:
 
 - ingresos.
 - gastos.
+- transferencias internas.
 - categorías.
 - gastos fijos.
 - patrones.

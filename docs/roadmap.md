@@ -10,6 +10,7 @@ La rama `main` cubre la base técnica:
 - lectura del usuario autenticado.
 - base de datos async.
 - migraciones iniciales.
+- núcleo inicial de cuentas, transacciones, transferencias internas y resumen financiero.
 
 ## Fase 1: base funcional
 
@@ -37,6 +38,7 @@ Entregables:
 - cuentas.
 - transacciones.
 - categorías.
+- transferencias internas entre cuentas.
 - transacciones recurrentes.
 - resúmenes financieros básicos.
 

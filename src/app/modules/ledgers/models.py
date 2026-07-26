@@ -1,7 +1,15 @@
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import Date, DateTime, ForeignKey, Numeric, String, Text
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    ForeignKey,
+    Numeric,
+    String,
+    Text,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -31,6 +39,16 @@ class AccountModel(Base):
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     transactions: Mapped[list["TransactionModel"]] = relationship(
         "TransactionModel", back_populates="account"
+    )
+    outgoing_transfers: Mapped[list["TransferModel"]] = relationship(
+        "TransferModel",
+        back_populates="from_account",
+        foreign_keys="TransferModel.from_account_id",
+    )
+    incoming_transfers: Mapped[list["TransferModel"]] = relationship(
+        "TransferModel",
+        back_populates="to_account",
+        foreign_keys="TransferModel.to_account_id",
     )
 
 
@@ -65,6 +83,56 @@ class TransactionModel(Base):
 
     account: Mapped["AccountModel"] = relationship(
         "AccountModel", back_populates="transactions"
+    )
+
+
+class TransferModel(Base):
+    __tablename__ = "account_transfer"
+    __table_args__ = (
+        CheckConstraint("amount > 0", name="ck_account_transfer_amount_positive"),
+        CheckConstraint(
+            "from_account_id <> to_account_id",
+            name="ck_account_transfer_distinct_accounts",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("user.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    from_account_id: Mapped[int] = mapped_column(
+        ForeignKey("account.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    to_account_id: Mapped[int] = mapped_column(
+        ForeignKey("account.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+    amount: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    currency: Mapped[CurrencyType] = mapped_column(String(3), default=CurrencyType.EUR)
+    transfer_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    description: Mapped[str] = mapped_column(String(length=180), nullable=False)
+
+    from_account: Mapped["AccountModel"] = relationship(
+        "AccountModel",
+        back_populates="outgoing_transfers",
+        foreign_keys=[from_account_id],
+    )
+    to_account: Mapped["AccountModel"] = relationship(
+        "AccountModel",
+        back_populates="incoming_transfers",
+        foreign_keys=[to_account_id],
     )
 
 
