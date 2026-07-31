@@ -76,8 +76,8 @@ async def create_account(
     return AccountSchema(account_id=account.id, account_name=account.name)
 
 
-@router.get("/account/{account_id}", response_model=AccountDetailSchema)
-async def account_resume(
+@router.get("/accounts/{account_id}", response_model=AccountDetailSchema)
+async def get_account(
     user: Annotated[User, Depends(current_active_user)],
     account_id: int,
 ) -> AccountDetailSchema:
@@ -96,7 +96,7 @@ async def account_resume(
     )
 
 
-@router.patch("/account/{account_id}", response_model=AccountSchema)
+@router.patch("/accounts/{account_id}", response_model=AccountSchema)
 async def update_account(
     user: Annotated[User, Depends(current_active_user)],
     account_id: int,
@@ -120,7 +120,7 @@ async def update_account(
 #
 #
 @router.get("/transaction-categories", response_model=list[TransactionCategorySchema])
-async def transaction_categories() -> list[TransactionCategorySchema]:
+async def get_transaction_categories() -> list[TransactionCategorySchema]:
     categories = await get_transaction_categories()
 
     return [
@@ -133,10 +133,8 @@ async def transaction_categories() -> list[TransactionCategorySchema]:
     ]
 
 
-@router.get(
-    "/account/{account_id}/transactions", response_model=list[TransactionSchema]
-)
-async def account_transactions(
+@router.get("/accounts/{account_id}/transactions", response_model=list[TransactionSchema])
+async def get_account_transactions(
     user: Annotated[User, Depends(current_active_user)],
     account_id: int,
     transaction_category_id: int | None = None,
@@ -159,7 +157,7 @@ async def account_transactions(
 
 
 @router.post(
-    "/account/{account_id}/transactions",
+    "/accounts/{account_id}/transactions",
     response_model=TransactionSchema,
     status_code=201,
 )

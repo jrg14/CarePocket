@@ -7,6 +7,7 @@ La documentación detallada de cada módulo vive en `docs/features/<modulo>/`.
 ## Módulos documentados
 
 - [Users](./features/users/overview.md)
+- [Ledgers](./features/ledgers/overview.md)
 
 ## Convención de la carpeta `features`
 
@@ -17,6 +18,6 @@ Cada módulo debe tener dos archivos:
 
 ## Estado actual
 
-En la rama `main` solo existe el módulo `users` como base funcional del backend.
+En la rama `main` existen ya los módulos `users` y `ledgers` como base funcional del backend.
 
-El resto de módulos de negocio, como `ledgers`, se documentarán siguiendo esta misma estructura cuando se implementen.
+La documentación de futuros módulos seguirá esta misma estructura.
