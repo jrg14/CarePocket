@@ -32,6 +32,8 @@ En esta etapa cubre:
 - Las cuentas pertenecen a un usuario.
 - Las transacciones pertenecen a una cuenta concreta.
 - El resumen financiero agrega datos por periodo y por categoría.
+- Los errores de recurso inexistente y acceso denegado se expresan con
+  excepciones de aplicación y se serializan mediante los handlers globales.
 
 ## Alcance actual
 

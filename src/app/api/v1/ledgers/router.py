@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Query
 
 from app.api.v1.ledgers.schemas import (
     AccountCreateSchema,
@@ -14,6 +14,8 @@ from app.api.v1.ledgers.schemas import (
     TransactionUpdateSchema,
 )
 from app.api.v1.ledgers.utils import to_transaction_schema
+from app.core.exceptions import PermissionDeniedError, ResourceNotFoundError
+from app.modules.ledgers.models import AccountModel, TransactionModel
 from app.modules.ledgers.services import (
     create_account_for_user,
     create_transaction_for_account,
@@ -22,7 +24,7 @@ from app.modules.ledgers.services import (
     get_active_accounts_by_user_id,
     get_active_transactions_by_account_id,
     get_transaction_by_id,
-    get_transaction_categories,
+    get_transaction_categories as get_transaction_categories_from_db,
     get_user_ledger_summary,
     update_active_account_name,
     update_transaction_for_user,
@@ -31,6 +33,44 @@ from app.modules.users.auth import current_active_user
 from app.modules.users.models import User
 
 router = APIRouter(prefix="/ledgers", tags=["ledgers"])
+
+
+def _ensure_account_access(
+    account: AccountModel | None,
+    user_id: int,
+) -> AccountModel:
+    if not account:
+        raise ResourceNotFoundError(
+            "Account not found",
+            code="account_not_found",
+        )
+
+    if account.user_id != user_id:
+        raise PermissionDeniedError(
+            "Access denied",
+            code="account_access_denied",
+        )
+
+    return account
+
+
+def _ensure_transaction_access(
+    transaction: TransactionModel | None,
+    user_id: int,
+) -> TransactionModel:
+    if not transaction:
+        raise ResourceNotFoundError(
+            "Transaction not found",
+            code="transaction_not_found",
+        )
+
+    if transaction.account.user_id != user_id:
+        raise PermissionDeniedError(
+            "Access denied",
+            code="transaction_access_denied",
+        )
+
+    return transaction
 
 
 #
@@ -82,12 +122,7 @@ async def get_account(
     account_id: int,
 ) -> AccountDetailSchema:
     account = await get_active_account_by_id(account_id=account_id)
-
-    if not account:
-        raise HTTPException(status_code=404, detail="Account not found")
-
-    if account.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    account = _ensure_account_access(account, user.id)
 
     return AccountDetailSchema(
         account_id=account.id,
@@ -109,7 +144,10 @@ async def update_account(
     )
 
     if not account:
-        raise HTTPException(status_code=404, detail="Account not found")
+        raise ResourceNotFoundError(
+            "Account not found",
+            code="account_not_found",
+        )
 
     return AccountSchema(account_id=account.id, account_name=account.name)
 
@@ -121,7 +159,7 @@ async def update_account(
 #
 @router.get("/transaction-categories", response_model=list[TransactionCategorySchema])
 async def get_transaction_categories() -> list[TransactionCategorySchema]:
-    categories = await get_transaction_categories()
+    categories = await get_transaction_categories_from_db()
 
     return [
         TransactionCategorySchema(
@@ -133,19 +171,16 @@ async def get_transaction_categories() -> list[TransactionCategorySchema]:
     ]
 
 
-@router.get("/accounts/{account_id}/transactions", response_model=list[TransactionSchema])
+@router.get(
+    "/accounts/{account_id}/transactions", response_model=list[TransactionSchema]
+)
 async def get_account_transactions(
     user: Annotated[User, Depends(current_active_user)],
     account_id: int,
     transaction_category_id: int | None = None,
 ) -> list[TransactionSchema]:
     account = await get_active_account_by_id(account_id=account_id)
-
-    if not account:
-        raise HTTPException(status_code=404, detail="Account not found")
-
-    if account.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    _ensure_account_access(account, user.id)
 
     transactions = await get_active_transactions_by_account_id(
         account_id=account_id,
@@ -167,12 +202,7 @@ async def create_transaction(
     payload: TransactionCreateSchema,
 ) -> TransactionSchema:
     account = await get_active_account_by_id(account_id=account_id)
-
-    if not account:
-        raise HTTPException(status_code=404, detail="Account not found")
-
-    if account.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    _ensure_account_access(account, user.id)
 
     transaction = await create_transaction_for_account(
         account_id=account_id,
@@ -186,7 +216,10 @@ async def create_transaction(
     )
 
     if not transaction:
-        raise HTTPException(status_code=404, detail="Account not found")
+        raise ResourceNotFoundError(
+            "Account not found",
+            code="account_not_found",
+        )
 
     return to_transaction_schema(transaction)
 
@@ -197,12 +230,7 @@ async def get_transaction(
     transaction_id: int,
 ) -> TransactionSchema:
     transaction = await get_transaction_by_id(transaction_id=transaction_id)
-
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-
-    if transaction.account.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    transaction = _ensure_transaction_access(transaction, user.id)
 
     return to_transaction_schema(transaction)
 
@@ -214,12 +242,7 @@ async def update_transaction(
     payload: TransactionUpdateSchema,
 ) -> TransactionSchema:
     transaction = await get_transaction_by_id(transaction_id=transaction_id)
-
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-
-    if transaction.account.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    _ensure_transaction_access(transaction, user.id)
 
     updated = await update_transaction_for_user(
         transaction_id=transaction_id,
@@ -228,7 +251,10 @@ async def update_transaction(
     )
 
     if not updated:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise ResourceNotFoundError(
+            "Transaction not found",
+            code="transaction_not_found",
+        )
 
     return to_transaction_schema(updated)
 
@@ -239,12 +265,7 @@ async def delete_transaction(
     transaction_id: int,
 ) -> None:
     transaction = await get_transaction_by_id(transaction_id=transaction_id)
-
-    if not transaction:
-        raise HTTPException(status_code=404, detail="Transaction not found")
-
-    if transaction.account.user_id != user.id:
-        raise HTTPException(status_code=403, detail="Access denied")
+    _ensure_transaction_access(transaction, user.id)
 
     deleted = await delete_transaction_for_user(
         transaction_id=transaction_id,
@@ -252,7 +273,10 @@ async def delete_transaction(
     )
 
     if not deleted:
-        raise HTTPException(status_code=404, detail="Transaction not found")
+        raise ResourceNotFoundError(
+            "Transaction not found",
+            code="transaction_not_found",
+        )
 
 
 #

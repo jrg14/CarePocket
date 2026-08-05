@@ -18,6 +18,8 @@ CarePocket está planteado como un backend modular en Python con FastAPI. La est
 4. El endpoint delega en servicios o utilidades del módulo correspondiente.
 5. Los modelos SQLAlchemy representan los datos persistidos.
 6. La respuesta se serializa con esquemas Pydantic.
+7. Los errores de aplicación se traducen en respuestas HTTP mediante handlers
+   globales.
 
 ## Componentes principales
 
@@ -34,6 +36,18 @@ Responsabilidades:
 - leer variables de entorno.
 - construir la URL de base de datos.
 - normalizar valores como `DEBUG` y `CORS_ORIGINS`.
+
+### `app/core/exceptions.py` y `app/core/error_handlers.py`
+
+Definen el contrato común de errores de la aplicación.
+
+Responsabilidades:
+
+- declarar excepciones propias como `ResourceNotFoundError` y
+  `PermissionDeniedError`.
+- registrar handlers globales en FastAPI.
+- devolver errores con un formato estable para clientes HTTP.
+- registrar errores inesperados antes de responder con un `500` genérico.
 
 ### `app/api`
 
@@ -74,4 +88,6 @@ Incluye:
 - Se usa SQLAlchemy async para separar modelo de persistencia y lógica HTTP.
 - Se usa Alembic para migraciones explícitas y evolutivas.
 - La creación automática de tablas en `init_db()` es útil en desarrollo, pero las migraciones deben ser la referencia real para cambios de esquema.
-
+- Los routers deben lanzar excepciones de aplicación cuando expresan errores de
+  negocio o acceso, y dejar que los handlers globales construyan la respuesta
+  HTTP final.
