@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -95,28 +96,26 @@ class LedgerSummaryCategorySchema(BaseModel):
     amount: Decimal = Field(..., description="Total amount for the category")
 
 
-class LedgerSummaryTotalsSchema(BaseModel):
+class LedgerSummaryBalanceChangeSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    balance: Decimal = Field(..., description="Combined balance across accounts")
-    income: Decimal = Field(..., description="Total income in the period")
-    expense: Decimal = Field(..., description="Total expense in the period")
-    expenses_by_category: list[LedgerSummaryCategorySchema]
-
-
-class LedgerSummaryAccountSchema(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    account_id: int = Field(..., description="Unique identifier for the account")
-    account_name: str = Field(..., description="Name of the account")
-    balance: Decimal = Field(..., description="Current balance of the account")
-    income: Decimal = Field(..., description="Total income for the account")
-    expense: Decimal = Field(..., description="Total expense for the account")
-    expenses_by_category: list[LedgerSummaryCategorySchema]
+    percentage: Decimal = Field(
+        ..., description="Absolute percentage change versus the previous month"
+    )
+    direction: Literal["improvement", "worsening", "neutral"] = Field(
+        ..., description="Direction of the balance change"
+    )
 
 
 class LedgerSummarySchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    totals: LedgerSummaryTotalsSchema
-    accounts: list[LedgerSummaryAccountSchema]
+    balance: Decimal = Field(
+        ..., description="Combined balance across all active accounts"
+    )
+    balance_change: LedgerSummaryBalanceChangeSchema
+    monthly_health: Decimal = Field(
+        ..., description="Remaining percentage of the monthly income after expenses"
+    )
+    top_expense_categories: list[LedgerSummaryCategorySchema]
+    latest_transactions: list[TransactionSchema]

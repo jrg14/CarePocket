@@ -9,7 +9,7 @@ En esta etapa cubre:
 - cuentas.
 - transacciones.
 - categorías de transacción.
-- resumen financiero agregado.
+- resumen financiero mensual.
 
 ## Responsabilidades
 
@@ -23,7 +23,7 @@ En esta etapa cubre:
 - `src/app/modules/ledgers/models.py`: modelos ORM del dominio financiero.
 - `src/app/modules/ledgers/accounts.py`: consultas y lógica de cuentas.
 - `src/app/modules/ledgers/transactions.py`: consultas y lógica de transacciones.
-- `src/app/modules/ledgers/summary.py`: cálculo del resumen financiero.
+- `src/app/modules/ledgers/summary.py`: cálculo del resumen financiero mensual.
 - `src/app/api/v1/ledgers/router.py`: endpoints HTTP del módulo.
 - `src/app/api/v1/ledgers/schemas.py`: esquemas Pydantic de entrada y salida.
 
@@ -41,7 +41,8 @@ Lo que existe en `main` es suficiente para:
 
 - crear y consultar cuentas.
 - crear, consultar, actualizar y borrar transacciones.
-- consultar un resumen financiero por periodo.
+- consultar un resumen financiero mensual con balance, salud y últimas
+  transacciones.
 
 Lo que todavía no existe:
 

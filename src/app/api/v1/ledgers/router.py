@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends
 
 from app.api.v1.ledgers.schemas import (
     AccountCreateSchema,
@@ -81,9 +81,19 @@ def _ensure_transaction_access(
 @router.get("/summary", response_model=LedgerSummarySchema)
 async def get_summary(
     user: Annotated[User, Depends(current_active_user)],
-    period_days: int = Query(30, ge=7, le=365),
 ) -> LedgerSummarySchema:
-    return await get_user_ledger_summary(user_id=user.id, period_days=period_days)
+    summary = await get_user_ledger_summary(user_id=user.id)
+
+    return LedgerSummarySchema(
+        balance=summary["balance"],
+        balance_change=summary["balance_change"],
+        monthly_health=summary["monthly_health"],
+        top_expense_categories=summary["top_expense_categories"],
+        latest_transactions=[
+            to_transaction_schema(transaction)
+            for transaction in summary["latest_transactions"]
+        ],
+    )
 
 
 #
