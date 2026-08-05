@@ -67,6 +67,34 @@ Flujo recomendado para nuevas modificaciones:
 - Lógica de dominio y acceso a datos en `app/modules`.
 - Configuración en `app/core`.
 - Infraestructura de persistencia en `app/db`.
+- Errores compartidos en `app/core/exceptions.py`.
+- Traducción de errores a HTTP en `app/core/error_handlers.py`.
+
+## Gestión de errores
+
+La API usa handlers globales de FastAPI para mantener respuestas de error
+consistentes.
+
+Formato general:
+
+```json
+{
+  "error": {
+    "code": "account_not_found",
+    "message": "Account not found",
+    "details": {}
+  }
+}
+```
+
+Convenciones:
+
+- usar `ResourceNotFoundError` para recursos inexistentes.
+- usar `PermissionDeniedError` para accesos no permitidos.
+- reservar `HTTPException` para integraciones externas o casos muy concretos de
+  la capa HTTP.
+- no ocultar errores inesperados; el handler global los registra y responde con
+  un `internal_server_error` genérico.
 
 ## Archivos que suele contener un módulo
 1. El archivo `models.py` encargado de contener los modelos del ORM
